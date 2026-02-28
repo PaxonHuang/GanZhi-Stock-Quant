@@ -1,0 +1,5 @@
+{
+  "name": "ZodiacQuant - Gan-Zhi Stock Dashboard",
+  "description": "A sophisticated stock analysis tool merging traditional Chinese Heavenly Stems and Earthly Branches with modern quantitative finance metrics, featuring Xun (10-day) K-lines and Wu Xing market sentiment analysis.",
+  "requestFramePermissions": []
+}
