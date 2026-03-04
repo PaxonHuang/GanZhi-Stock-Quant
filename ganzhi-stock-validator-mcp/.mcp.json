@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ganzhi-stock-validator": {
+      "command": "python",
+      "args": ["-m", "ganzhi_stock_validator.server"],
+      "workingDirectory": "H:\\OutsourcingProjects\\TiangandizhiStock\\ganzhi-stock-validator-mcp"
+    }
+  }
+}

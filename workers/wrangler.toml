@@ -1,0 +1,13 @@
+name = "ganzhi-stock-worker"
+main = "src/index.py"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["python_workers"]
+
+[vars]
+PYTHON_VERSION = "3.12"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+# Supabase binding - user needs to configure in Cloudflare Dashboard
+# This is a placeholder - actual binding will be configured in the dashboard

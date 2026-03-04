@@ -1,0 +1,15 @@
+[project]
+name = "ganzhi-stock-worker"
+version = "0.1.0"
+description = "GanZhi Stock Dashboard Cloudflare Worker"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.27.0",
+    "lunar-python>=1.8.0",
+]
+
+[dependency-groups]
+dev = [
+    "workers-py",
+    "workers-runtime-sdk",
+]
