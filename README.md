@@ -5,7 +5,8 @@
 ## 项目简介
 
 干支股票看板是一个创新的金融数据可视化平台,将传统中国历法系统(干支)与股票K线图相结合,为投资者提供独特的市场分析视角。
-
+![dashboard1](image/README/DashboardV1.png)
+![dashboard2](image/README/dashboard2.png)
 ### 核心特性
 
 - 📊 **K线图表**: 使用ECharts实现专业的金融图表展示
@@ -31,9 +32,11 @@
 ### 后端
 
 - **云函数**: Cloudflare Workers (Python)
+- [cloudflare-worker-types](https://github.com/cloudflare/cloudflare-worker-types)/README.md)
 - **数据库**: Supabase (PostgreSQL)
 - **数据验证**: MCP Server (ganzhi-stock-validator-mcp)
-
+- [MCP文档](ganzhi-stock-validator-mcp/README.md)
+- [MCP设置](mcp-config.md)
 ## 项目结构
 
 ```

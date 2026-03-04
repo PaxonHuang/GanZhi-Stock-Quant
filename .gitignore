@@ -3,7 +3,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
 build/
 develop-eggs/
 dist/
@@ -47,9 +46,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-dist/
-dist-ssr/
-*.local
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -78,9 +74,6 @@ worker-configuration.d.ts
 # Supabase
 .supabase/
 
-# Project specific
-*.xlsx
-~$*
 
 # IDE
 .vscode/
