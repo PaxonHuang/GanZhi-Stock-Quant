@@ -17,6 +17,7 @@
 ## 技术栈
 
 ### 前端
+
 - **框架**: React 18 + TypeScript
 - **构建工具**: Vite
 - **样式**: TailwindCSS
@@ -28,6 +29,7 @@
 - **测试**: Vitest + Testing Library
 
 ### 后端
+
 - **云函数**: Cloudflare Workers (Python)
 - **数据库**: Supabase (PostgreSQL)
 - **数据验证**: MCP Server (ganzhi-stock-validator-mcp)
@@ -142,19 +144,19 @@ python -m ganzhi_stock_validator.server
 
 ### stock_data表
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | uuid | 主键 |
-| trade_date | date | 交易日期(唯一) |
-| open | numeric | 开盘价 |
-| high | numeric | 最高价 |
-| low | numeric | 最低价 |
-| close | numeric | 收盘价 |
-| volume | numeric | 成交量 |
-| amount | numeric | 成交额 |
-| ganzi_year | text | 年干支(如"庚午年") |
-| ganzi_day | text | 日干支(如"甲子日") |
-| created_at | timestamptz | 记录创建时间 |
+| 字段       | 类型        | 说明               |
+| ---------- | ----------- | ------------------ |
+| id         | uuid        | 主键               |
+| trade_date | date        | 交易日期(唯一)     |
+| open       | numeric     | 开盘价             |
+| high       | numeric     | 最高价             |
+| low        | numeric     | 最低价             |
+| close      | numeric     | 收盘价             |
+| volume     | numeric     | 成交量             |
+| amount     | numeric     | 成交额             |
+| ganzi_year | text        | 年干支(如"庚午年") |
+| ganzi_day  | text        | 日干支(如"甲子日") |
+| created_at | timestamptz | 记录创建时间       |
 
 ### 安全策略
 
@@ -165,11 +167,13 @@ python -m ganzhi_stock_validator.server
 ## API端点
 
 ### 健康检查
+
 ```
 GET /api/health
 ```
 
 ### 获取股票数据
+
 ```
 GET /api/stock-data?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&limit=N
 ```
@@ -187,18 +191,19 @@ python scripts/import_data.py --file 上证指数.xlsx
 ### 代码规范
 
 项目遵循严格的TypeScript规范:
+
 - 启用严格模式
-- 禁止使用`any`类型
+- 禁止使用 `any`类型
 - 必须定义所有接口和类型
 
 ### 命名约定
 
-| 类型 | 约定 | 示例 |
-|------|------|------|
-| 组件 | PascalCase | `KLineChart.tsx` |
-| 工具函数 | camelCase | `dateConverter.ts` |
-| 接口/类型 | PascalCase | `StockData` |
-| 常量 | UPPER_SNAKE_CASE | `API_ENDPOINTS` |
+| 类型      | 约定             | 示例                 |
+| --------- | ---------------- | -------------------- |
+| 组件      | PascalCase       | `KLineChart.tsx`   |
+| 工具函数  | camelCase        | `dateConverter.ts` |
+| 接口/类型 | PascalCase       | `StockData`        |
+| 常量      | UPPER_SNAKE_CASE | `API_ENDPOINTS`    |
 
 ### 测试
 
@@ -215,12 +220,14 @@ pytest
 ## 环境变量
 
 ### 前端 (.env)
+
 ```
 VITE_SUPABASE_URL=your-supabase-url
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ### Workers (.dev.vars)
+
 ```
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_KEY=your-service-role-key
@@ -248,14 +255,15 @@ wrangler deploy
 ### 常见问题
 
 1. **Supabase连接失败**
+
    - 检查环境变量是否正确配置
    - 确认数据库已正确初始化
-
 2. **CORS错误**
+
    - 检查Worker的CORS配置
    - 确认Supabase项目的CORS设置
-
 3. **数据导入失败**
+
    - 验证Excel文件格式
    - 使用MCP验证服务器检查数据质量
 
