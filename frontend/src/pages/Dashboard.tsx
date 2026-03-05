@@ -4,6 +4,8 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { KLineChart } from '@/components/KLineChart';
+import { MonthlyKLineChart } from '@/components/MonthlyKLineChart';
+import { FiveElementsAdvice } from '@/components/FiveElementsAdvice';
 import { fetchStockData, importStockData, clearStockData, type StockData } from '@/config/supabase';
 import { parseExcelFile, validateStockData, type ParsedStockData } from '@/utils/excelParser';
 
@@ -13,6 +15,9 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<string>('');
+
+  // Annotation state
+  const [annotatedIndices, setAnnotatedIndices] = useState<number[]>([]);
   
   // Date range filter
   const [startDate, setStartDate] = useState<string>('');
@@ -74,6 +79,18 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+
+  // Annotation handlers
+  const handleAnnotate = (index: number) => {
+    setAnnotatedIndices(prev => 
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
+  };
+
+  const handleClearAnnotations = () => {
+    setAnnotatedIndices([]);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -337,30 +354,51 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Chart */}
-        <div className="bg-fin-card border border-fin-border rounded-lg p-4">
-          <KLineChart 
-            data={filteredData} 
-            loading={loading}
-            height={600}
-          />
-        </div>
-        <div className="bg-fin-card border border-fin-border rounded-lg p-4">
-          <KLineChart 
-            data={filteredData} 
-            loading={loading}
-            height={600}
-          />
-          <div className="mt-2 p-2 bg-gray-800 text-xs text-white">
-            Debug: loading={String(loading)} | data.length={filteredData?.length || 0}
+        {/* Daily K-Line Chart */}
+        <div className="mb-6">
+          <div className="bg-fin-card border border-fin-border rounded-lg p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gold">日 K 线图</h2>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-text-secondary">点击 K 线可标注</span>
+                {annotatedIndices.length > 0 && (
+                  <>
+                    <span className="text-sm text-gold">已标注 {annotatedIndices.length} 个点</span>
+                    <button
+                      onClick={handleClearAnnotations}
+                      className="px-3 py-1 text-xs bg-fin-bg border border-fin-border rounded text-text-secondary hover:text-text-primary hover:border-text-secondary transition-colors"
+                    >
+                      清除标注
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+            <KLineChart 
+              data={filteredData} 
+              loading={loading}
+              height={500}
+              onAnnotate={handleAnnotate}
+              annotatedIndices={annotatedIndices}
+            />
           </div>
         </div>
-        <div className="bg-fin-card border border-fin-border rounded-lg p-4">
-          <KLineChart 
-            data={filteredData} 
-            loading={loading}
-            height={600}
-          />
+
+        {/* Monthly K-Line Chart */}
+        <div className="mb-6">
+          <div className="bg-fin-card border border-fin-border rounded-lg p-4">
+            <h2 className="text-lg font-bold text-gold mb-4">月 K 线图</h2>
+            <MonthlyKLineChart 
+              data={stockData}
+              loading={loading}
+              height={400}
+            />
+          </div>
+        </div>
+
+        {/* Five Elements Advice */}
+        <div className="mb-6">
+          <FiveElementsAdvice data={filteredData} />
         </div>
 
         {/* Date Range Info */}

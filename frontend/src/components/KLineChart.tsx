@@ -24,6 +24,8 @@ interface KLineChartProps {
   data: StockData[];
   loading?: boolean;
   height?: number | string;
+  onAnnotate?: (index: number) => void;
+  annotatedIndices?: number[];
 }
 
 // Calculate moving average
@@ -47,6 +49,8 @@ export const KLineChart: React.FC<KLineChartProps> = ({
   data,
   loading = false,
   height = 600,
+  onAnnotate,
+  annotatedIndices = [],
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
@@ -95,11 +99,11 @@ export const KLineChart: React.FC<KLineChartProps> = ({
         <div>📅 ${item.axisValue}</div>
         <div>${ganzhi.year} ${ganzhi.day}</div>
         <div style="color: ${COLORS.gold};">━━━</div>
-        <div>开盘: ${stockData.open}</div>
-        <div>收盘: ${stockData.close}</div>
-        <div>最高: ${stockData.high}</div>
-        <div>最低: ${stockData.low}</div>
-        <div>成交量: ${stockData.volume.toLocaleString()}</div>
+        <div>开盘：${stockData.open}</div>
+        <div>收盘：${stockData.close}</div>
+        <div>最高：${stockData.high}</div>
+        <div>最低：${stockData.low}</div>
+        <div>成交量：${stockData.volume.toLocaleString()}</div>
       </div>`;
     };
 
@@ -110,7 +114,7 @@ export const KLineChart: React.FC<KLineChartProps> = ({
         show: true,
         top: 10,
         textStyle: { color: COLORS.text },
-        data: ['K线', 'MA5', 'MA10', 'MA20'],
+        data: ['K 线', 'MA5', 'MA10', 'MA20'],
       },
       tooltip: {
         trigger: 'axis',
@@ -159,11 +163,11 @@ export const KLineChart: React.FC<KLineChartProps> = ({
         },
       ],
       dataZoom: [
-        { type: 'inside', xAxisIndex: [0, 1], start: 50, end: 100 },
+        { type: 'inside', xAxisIndex: [0, 1], start: 80, end: 100 },
       ],
       series: [
         {
-          name: 'K线',
+          name: 'K 线',
           type: 'candlestick',
           data: chartData.ohlc,
           itemStyle: {
@@ -172,6 +176,40 @@ export const KLineChart: React.FC<KLineChartProps> = ({
             borderColor: COLORS.bullish,
             borderColor0: COLORS.bearish,
           },
+        },
+        // Annotation markers series
+        {
+          name: 'Annotations',
+          type: 'scatter',
+          xAxisIndex: 0,
+          yAxisIndex: 0,
+          data: annotatedIndices.map((idx) => {
+            const ohlcData = chartData.ohlc[idx];
+            if (!ohlcData) return null;
+            const high = ohlcData[3];
+            const priceRange = Math.max(...chartData.ohlc.map(o => o[1])) - Math.min(...chartData.ohlc.map(o => o[2]));
+            return {
+              value: [idx, high + priceRange * 0.05], // Above the high price with 5% padding
+              symbol: 'pin',
+              symbolSize: 32,
+              symbolRotate: 0,
+              itemStyle: { 
+                color: '#00FF00',
+                shadowBlur: 10,
+                shadowColor: '#00FF00',
+              },
+            };
+          }).filter(Boolean),
+          label: {
+            show: true,
+            position: 'top',
+            distance: 5,
+            formatter: '📍',
+            color: '#00FF00',
+            fontSize: 16,
+            fontWeight: 'bold',
+          },
+          z: 100,
         },
         { name: 'MA5', type: 'line', data: chartData.ma5, smooth: true, lineStyle: { width: 1, color: COLORS.ma5 }, symbol: 'none' },
         { name: 'MA10', type: 'line', data: chartData.ma10, smooth: true, lineStyle: { width: 1, color: COLORS.ma10 }, symbol: 'none' },
@@ -188,10 +226,23 @@ export const KLineChart: React.FC<KLineChartProps> = ({
     
     chartInstance.current.setOption(option);
     
+    // Add click handler for annotation
+    if (chartInstance.current) {
+      chartInstance.current.on('click', (params: any) => {
+        // Only handle clicks on candlestick series
+        if (params.seriesName === 'K 线' && params.dataIndex !== undefined) {
+          console.log('[KLineChart] Candlestick clicked, dataIndex:', params.dataIndex);
+          if (onAnnotate) {
+            onAnnotate(params.dataIndex);
+          }
+        }
+      });
+    }
+    
     return () => {
       // Don't dispose on every update
     };
-  }, [chartData, data]);
+  }, [chartData, data, annotatedIndices, onAnnotate]);
 
   const containerStyle = {
     height: typeof height === 'number' ? `${height}px` : height,
