@@ -5,13 +5,17 @@
 ## 项目简介
 
 干支股票看板是一个创新的金融数据可视化平台,将传统中国历法系统(干支)与股票K线图相结合,为投资者提供独特的市场分析视角。
+
 ![dashboard1](image/README/DashboardV1.png)
 ![dashboard2](image/README/dashboard2.png)
+
 ### 核心特性
 
 - 📊 **K线图表**: 使用ECharts实现专业的金融图表展示
 - 🗓️ **干支历法**: 集成中国传统历法系统,显示年干支和日干支
-- 📈 **数据可视化**: 支持多种图表类型和交互功能
+- 📈 **月K线图**: 干支月K线图,以干支作为x轴显示月度行情
+- 🔮 **五行分析**: 基于天干地支的五行属性生成投资建议
+- 🖱️ **点击标注**: 点击K线蜡烛图可标注/取消标注感兴趣的位置
 - 🎨 **现代UI**: 使用TailwindCSS构建的深色金融主题界面
 - 🔒 **安全可靠**: 基于Supabase的数据库和Cloudflare Workers的后端服务
 
@@ -32,11 +36,9 @@
 ### 后端
 
 - **云函数**: Cloudflare Workers (Python)
-- [cloudflare-worker-types](https://github.com/cloudflare/cloudflare-worker-types)/README.md)
 - **数据库**: Supabase (PostgreSQL)
 - **数据验证**: MCP Server (ganzhi-stock-validator-mcp)
-- [MCP文档](ganzhi-stock-validator-mcp/README.md)
-- [MCP设置](mcp-config.md)
+
 ## 项目结构
 
 ```
@@ -44,10 +46,16 @@ TiangandizhiStock/
 ├── frontend/                    # 前端应用
 │   ├── src/
 │   │   ├── components/         # React组件
-│   │   ├── pages/             # 页面组件
+│   │   │   ├── KLineChart.tsx        # 日K线图(支持点击标注)
+│   │   │   ├── MonthlyKLineChart.tsx # 干支月K线图
+│   │   │   └── FiveElementsAdvice.tsx # 五行投资建议面板
+│   │   ├── pages/              # 页面组件
+│   │   │   └── Dashboard.tsx   # 主看板页面
 │   │   ├── config/            # 配置文件
 │   │   ├── types/             # TypeScript类型定义
 │   │   └── utils/             # 工具函数
+│   │       ├── dateConverter.ts    # 干支日期转换
+│   │       └── fiveElements.ts     # 五行计算与建议
 │   ├── package.json
 │   └── vite.config.ts
 ├── workers/                    # Cloudflare Workers后端
@@ -258,15 +266,12 @@ wrangler deploy
 ### 常见问题
 
 1. **Supabase连接失败**
-
    - 检查环境变量是否正确配置
    - 确认数据库已正确初始化
 2. **CORS错误**
-
    - 检查Worker的CORS配置
    - 确认Supabase项目的CORS设置
 3. **数据导入失败**
-
    - 验证Excel文件格式
    - 使用MCP验证服务器检查数据质量
 

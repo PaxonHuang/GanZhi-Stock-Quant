@@ -4,22 +4,25 @@ GanZhi Stock Dashboard - Cloudflare Worker (Python)
 This Worker provides API endpoints for:
 - GET /api/stock-data: Fetch stock data from Supabase
 - POST /api/import: Import data (for authenticated users)
+- GET /api/health: Health check
 
-Note: This Worker uses direct HTTP calls to Supabase PostgREST API
-instead of the Python client (which has compatibility issues with Workers).
+Note: This Worker uses built-in fetch for HTTP calls to Supabase PostgREST API.
+GanZhi calculation is implemented manually (lunar_python not available in Workers).
 """
 
 from datetime import date, datetime
 from typing import Optional
 import json
 import os
-import httpx
-from lunar_python import Solar, Lunar
 
 
 # Environment variables (set in Cloudflare Dashboard or .env)
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+
+# GanZhi constants
+TIAN_GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"]
+DI_ZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
 
 
 def get_supabase_headers() -> dict:
@@ -33,14 +36,7 @@ def get_supabase_headers() -> dict:
 
 
 def parse_date(date_str: str) -> Optional[date]:
-    """
-    Parse date from various formats including M/D/YY.
-    
-    Examples:
-        - "12/19/90" -> 1990-12-19
-        - "1/5/05" -> 2005-01-05
-        - "1990-12-19" -> 1990-12-19
-    """
+    """Parse date from various formats including M/D/YY."""
     if not date_str:
         return None
     
@@ -67,14 +63,43 @@ def parse_date(date_str: str) -> Optional[date]:
     return None
 
 
-def solar_to_ganzhi(dt: date) -> dict:
-    """Convert solar date to GanZhi (干支) information."""
-    solar = Solar.fromYmd(dt.year, dt.month, dt.day)
-    lunar = solar.getLunar()
+def calculate_ganzhi(dt: date) -> dict:
+    """
+    Calculate GanZhi (干支) for a given date.
+    
+    Uses the formula based on:
+    - Day GanZhi: (Julian Day Number - 1) mod 10
+    - Year GanZhi: (Year - 4) mod 10 for stem, (Year - 4) mod 12 for branch
+    """
+    # Calculate Julian Day Number (JDN)
+    # Using the formula for Gregorian calendar
+    year = dt.year
+    month = dt.month
+    day = dt.day
+    
+    if month <= 2:
+        year -= 1
+        month += 12
+    
+    A = year // 100
+    B = A // 4
+    C = 2 - A + B
+    E = int(365.25 * (year + 4716))
+    F = int(30.6001 * (month + 1))
+    JDN = C + day + E + F - 1524.5
+    
+    # Day GanZhi: (JDN - 1) mod 10, offset to start from 甲子 (index 0)
+    day_gan_index = int((JDN - 1) % 10)
+    day_zhi_index = int((JDN - 1) % 12)
+    
+    # Year GanZhi: (year - 4) mod 10 for stem, (year - 4) mod 12 for branch
+    # Reference: 1984 is甲子 year
+    year_gan_index = (year - 4) % 10
+    year_zhi_index = (year - 4) % 12
     
     return {
-        "year_ganzhi": lunar.getYearInGanZhi(),
-        "day_ganzhi": lunar.getDayInGanZhi()
+        "year_ganzhi": TIAN_GAN[year_gan_index] + DI_ZHI[year_zhi_index],
+        "day_ganzhi": TIAN_GAN[day_gan_index] + DI_ZHI[day_zhi_index]
     }
 
 
@@ -83,17 +108,7 @@ async def fetch_stock_data(
     end_date: Optional[str] = None,
     limit: Optional[int] = None
 ) -> list:
-    """
-    Fetch stock data from Supabase using PostgREST API.
-    
-    Args:
-        start_date: Start date (YYYY-MM-DD)
-        end_date: End date (YYYY-MM-DD)  
-        limit: Maximum number of records
-    
-    Returns:
-        List of stock data records
-    """
+    """Fetch stock data from Supabase using PostgREST API."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         return {"error": "Supabase credentials not configured"}
     
@@ -113,61 +128,48 @@ async def fetch_stock_data(
     
     url += "?" + "&".join(params)
     
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            url,
-            headers=get_supabase_headers()
-        )
-        
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return {"error": f"API error: {response.status_code}", "detail": response.text}
+    # Use built-in fetch for Cloudflare Workers
+    response = await fetch(url, {
+        "method": "GET",
+        "headers": get_supabase_headers()
+    })
+    
+    if response.status == 200:
+        return await response.json()
+    else:
+        text = await response.text()
+        return {"error": f"API error: {response.status}", "detail": text}
 
 
 async def import_stock_data(records: list) -> dict:
-    """
-    Import stock data to Supabase using PostgREST API.
-    
-    Args:
-        records: List of stock data records
-    
-    Returns:
-        Result with success count and any errors
-    """
+    """Import stock data to Supabase using PostgREST API."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         return {"success": False, "error": "Supabase credentials not configured"}
     
     url = f"{SUPABASE_URL}/rest/v1/stock_data"
     
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            url,
-            headers=get_supabase_headers(),
-            json=records
-        )
-        
-        if response.status_code in [200, 201]:
-            return {"success": True, "imported": len(records)}
-        else:
-            return {"success": False, "error": f"API error: {response.status_code}", "detail": response.text}
-
-
-async def on_fetch(request: Request) -> Response:
-
-
-async def on_fetch(request: Request) -> Response:
-    """
-    Handle incoming requests.
+    # Use built-in fetch for Cloudflare Workers
+    response = await fetch(url, {
+        "method": "POST",
+        "headers": get_supabase_headers(),
+        "body": json.dumps(records)
+    })
     
-    Routes:
-        - GET /api/stock-data - Fetch stock data
-        - GET /api/health - Health check
-    """
+    if response.status in [200, 201]:
+        return {"success": True, "imported": len(records)}
+    else:
+        text = await response.text()
+        return {"success": False, "error": f"API error: {response.status}", "detail": text}
+
+
+async def on_fetch(request):
+    """Handle incoming requests."""
+    from urllib.parse import urlparse, parse_qs
+    
     # Parse URL and query params
-    url = URL(request.url)
-    path = url.path
-    params = dict(url.search_params)
+    parsed = urlparse(request.url)
+    path = parsed.path
+    params = parse_qs(parsed.query)
     
     # CORS headers
     cors_headers = {
@@ -189,21 +191,19 @@ async def on_fetch(request: Request) -> Response:
     
     # Route: GET /api/stock-data
     if path == "/api/stock-data" and request.method == "GET":
-        start_date = params.get("start_date")
-        end_date = params.get("end_date")
-        limit = params.get("limit")
+        start_date = params.get("start_date", [None])[0]
+        end_date = params.get("end_date", [None])[0]
+        limit_str = params.get("limit", [None])[0]
         
-        if limit:
+        limit = None
+        if limit_str:
             try:
-                limit = int(limit)
+                limit = int(limit_str)
             except ValueError:
-                limit = None
+                pass
         
         data = await fetch_stock_data(start_date, end_date, limit)
         
-        return Response(
-            json.dumps({"data": data}),
-            headers={**cors_headers, "Content-Type": "application/json"}
         return Response(
             json.dumps({"data": data}),
             headers={**cors_headers, "Content-Type": "application/json"}
@@ -227,7 +227,7 @@ async def on_fetch(request: Request) -> Response:
                         dt = trade_date
                     
                     if dt and not record.get("ganzi_year"):
-                        ganzhi = solar_to_ganzhi(dt)
+                        ganzhi = calculate_ganzhi(dt)
                         record["ganzi_year"] = ganzhi["year_ganzhi"]
                         record["ganzi_day"] = ganzhi["day_ganzhi"]
                 
@@ -247,16 +247,8 @@ async def on_fetch(request: Request) -> Response:
             )
     
     # Default: 404
-    
-    # Default: 404
     return Response(
         json.dumps({"error": "Not found", "path": path}),
         status=404,
         headers={**cors_headers, "Content-Type": "application/json"}
     )
-
-
-# For local development with wrangler
-if __name__ == "__main__":
-    from hyper import hole
-    hole.serve()
